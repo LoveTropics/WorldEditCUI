@@ -30,7 +30,7 @@ dependency-reduced-pom.xml
 /.architectury-transformer/
 
 # Fabric stuff
-/*/run/
+run/
 
 # OS X quirks
 .DS_Store

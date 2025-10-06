@@ -7,10 +7,9 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.enginehub.worldeditcui.fabric;
+package org.enginehub.worldeditcui.neo;
 
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.loader.api.FabricLoader;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import org.enginehub.worldeditcui.protocol.CUIPacket;
 import org.enginehub.worldeditcui.protocol.CUIPacketHandler;
 
@@ -23,21 +22,14 @@ import java.util.function.BiConsumer;
  */
 final class CUINetworking {
 
-    private static final boolean VIAFABRICPLUS_AVAILABLE = FabricLoader.getInstance().isModLoaded("viafabricplus");
-
-    static final String CHANNEL_LEGACY = "WECUI"; // pre-1.13 channel name
-
     private CUINetworking() {
     }
 
     public static void send(final CUIPacket pkt) {
-        ClientPlayNetworking.send(pkt);
+        ClientPacketDistributor.sendToServer(pkt);
     }
 
     public static void subscribeToCuiPacket(final BiConsumer<CUIPacket, CUIPacketHandler.PacketContext> handler) {
         CUIPacketHandler.instance().registerClientboundHandler(handler);
-        if (VIAFABRICPLUS_AVAILABLE) {
-            ViaFabricPlusHook.enable();
-        }
     }
 }
