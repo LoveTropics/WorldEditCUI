@@ -1,0 +1,103 @@
+plugins {
+    id 'java-library'
+    id 'eclipse'
+    id 'idea'
+    id 'maven-publish'
+    id 'net.neoforged.moddev' version '2.0.103'
+}
+
+group = mod_group_id
+base {
+    archivesName = mod_id
+}
+
+def env = System.getenv()
+
+if (env.GITHUB_RUN_NUMBER) {
+    version = "$minecraft_version+${env.GITHUB_RUN_NUMBER}"
+} else {
+    version = "$minecraft_version-SNAPSHOT"
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+neoForge {
+    version = project.neo_version
+
+    parchment {
+        minecraftVersion = project.minecraft_version
+        mappingsVersion = project.parchment_version
+    }
+
+    runs {
+        configureEach {
+            logLevel = org.slf4j.event.Level.WARN
+            gameDirectory = project.file('run')
+        }
+        client {
+            client()
+        }
+        server {
+            server()
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+repositories {
+    maven {
+        url = 'https://maven.enginehub.org/repo'
+        content {
+            includeGroupAndSubgroups 'com.sk89q'
+            includeGroupAndSubgroups 'org.enginehub'
+        }
+    }
+    mavenLocal()
+}
+
+dependencies {
+    implementation("com.sk89q.worldedit:worldedit-neoforge-mc$minecraft_version:$worldedit_version") {
+        exclude group: "com.google.guava"
+        exclude group: "org.mozilla"
+    }
+    jarJar(implementation("org.enginehub.worldeditcui-protocol:worldeditcui-protocol-neoforge-mc$minecraft_version:$worldeditcui_protocol_version"))
+}
+
+var generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
+    var replaceProperties = [
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            neo_version            : neo_version,
+            neo_version_range      : neo_version_range,
+            loader_version_range   : loader_version_range,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : version,
+            mod_authors            : mod_authors,
+            mod_description        : mod_description
+    ]
+    inputs.properties replaceProperties
+    expand replaceProperties
+    from 'src/main/templates'
+    into 'build/generated/sources/modMetadata'
+}
+sourceSets.main.resources.srcDir generateModMetadata
+
+neoForge.ideSyncTask generateModMetadata
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+idea {
+    module {
+        downloadSources = true
+        downloadJavadoc = true
+    }
+}
