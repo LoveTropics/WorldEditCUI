@@ -48,16 +48,26 @@ repositories {
     maven {
         url = 'https://maven.enginehub.org/repo'
     }
+    repositories {
+        maven {
+            url "https://cursemaven.com"
+        }
+    }
     mavenLocal()
 }
 
 dependencies {
-    implementation("com.sk89q.worldedit:worldedit-neoforge-mc$minecraft_version:$worldedit_version") {
-        exclude group: "com.google.guava"
-        exclude group: "org.mozilla"
+    implementation "curse.maven:worldedit-225608:8272170"
+    // Using the maven version is just broken
+//    implementation("com.sk89q.worldedit:worldedit-neoforge-mc$minecraft_version:$worldedit_version") {
+//        exclude group: "com.google.guava"
+//        exclude group: "org.mozilla"
+//    }
+    jarJar(implementation("org.enginehub.worldeditcui-protocol:worldeditcui-protocol-common-mc$minecraft_version:$worldeditcui_protocol_version")) {
+        exclude group: "net.fabricmc"
     }
-    jarJar(implementation("org.enginehub.worldeditcui-protocol:worldeditcui-protocol-common-mc$minecraft_version:$worldeditcui_protocol_version"))
-    jarJar(implementation("org.enginehub.worldeditcui-protocol:worldeditcui-protocol-neoforge-mc$minecraft_version:$worldeditcui_protocol_version"))
+    // Enabling this also breaks stuff
+//    jarJar(implementation("org.enginehub.worldeditcui-protocol:worldeditcui-protocol-neoforge-mc$minecraft_version:$worldeditcui_protocol_version"))
 }
 
 var generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
