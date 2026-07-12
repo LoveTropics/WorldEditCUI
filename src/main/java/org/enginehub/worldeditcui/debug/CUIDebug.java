@@ -34,7 +34,7 @@ import java.nio.file.Path;
  */
 public final class CUIDebug implements InitialisationFactory
 {
-	private static final boolean LOG_ALL_ERRORS = Boolean.getBoolean("wecui.debug.logall") || !FMLLoader.isProduction();
+	private static final boolean LOG_ALL_ERRORS = Boolean.getBoolean("wecui.debug.logall") || !FMLLoader.getCurrent().isProduction();
 	private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger("WorldEditCUI");
 	
 	private final WorldEditCUI controller;
@@ -66,9 +66,9 @@ public final class CUIDebug implements InitialisationFactory
 		}
 
 		final FileAppender appender = FileAppender.newBuilder()
-				.setName("WECUIDebug")
-				.withFileName(debugFile.toAbsolutePath().toString())
-				.withCreateOnDemand(true)
+                .setName("WECUIDebug").
+                setFileName(debugFile.toAbsolutePath().toString())
+				.setCreateOnDemand(true)
 				.setFilter(new DebugModeEnabledFilter(this.controller.getConfiguration()))
 				.setLayout(layout)
 				.build();

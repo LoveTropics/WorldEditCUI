@@ -3,7 +3,7 @@ plugins {
     id 'eclipse'
     id 'idea'
     id 'maven-publish'
-    id 'net.neoforged.moddev' version '2.0.103'
+    id 'net.neoforged.moddev' version '2.0.141'
 }
 
 group = mod_group_id
@@ -19,15 +19,10 @@ if (env.GITHUB_RUN_NUMBER) {
     version = "$minecraft_version-SNAPSHOT"
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
 neoForge {
     version = project.neo_version
-
-    parchment {
-        minecraftVersion = project.minecraft_version
-        mappingsVersion = project.parchment_version
-    }
 
     runs {
         configureEach {
@@ -52,10 +47,6 @@ neoForge {
 repositories {
     maven {
         url = 'https://maven.enginehub.org/repo'
-        content {
-            includeGroupAndSubgroups 'com.sk89q'
-            includeGroupAndSubgroups 'org.enginehub'
-        }
     }
     mavenLocal()
 }
@@ -65,6 +56,7 @@ dependencies {
         exclude group: "com.google.guava"
         exclude group: "org.mozilla"
     }
+    jarJar(implementation("org.enginehub.worldeditcui-protocol:worldeditcui-protocol-common-mc$minecraft_version:$worldeditcui_protocol_version"))
     jarJar(implementation("org.enginehub.worldeditcui-protocol:worldeditcui-protocol-neoforge-mc$minecraft_version:$worldeditcui_protocol_version"))
 }
 

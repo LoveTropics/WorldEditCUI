@@ -14,6 +14,8 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.state.level.LevelRenderState;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.Level;
 import net.neoforged.api.distmarker.Dist;
@@ -21,18 +23,13 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
-import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import net.neoforged.neoforge.client.event.*;
 import net.neoforged.neoforge.client.event.lifecycle.ClientStartedEvent;
-import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.common.NeoForge;
 import org.enginehub.worldeditcui.WorldEditCUI;
 import org.enginehub.worldeditcui.config.CUIConfiguration;
 import org.enginehub.worldeditcui.event.listeners.CUIListenerChannel;
 import org.enginehub.worldeditcui.event.listeners.CUIListenerWorldRender;
-import org.enginehub.worldeditcui.gui.CUIConfigPanel;
 import org.enginehub.worldeditcui.protocol.CUIPacket;
 import org.enginehub.worldeditcui.protocol.CUIPacketHandler;
 import org.enginehub.worldeditcui.render.PipelineProvider;
@@ -84,9 +81,9 @@ public final class NeoModWorldEditCUI {
      * @param code default value
      * @return new, registered keybinding in the mod category
      */
+
     private static KeyMapping key(final String name, final int code) {
-        return KeyMappingHelper.registerKeyMapping(
-                new KeyMapping("key." + MOD_ID + '.' + name, code, KEYBIND_CATEGORY_WECUI));
+        return new KeyMapping("key." + MOD_ID + '.' + name, code, KEYBIND_CATEGORY_WECUI);
     }
 
     public NeoModWorldEditCUI(final IEventBus modBus, final ModContainer modContainer) {
@@ -100,23 +97,24 @@ public final class NeoModWorldEditCUI {
         modBus.addListener(this::registerKeyMapping);
 
         CUINetworking.subscribeToCuiPacket(this::onPluginMessage);
-        ClientPlayConnectionEvents.JOIN.register(this::onJoinGame);
-        LevelRenderEvents.END_EXTRACTION.register(ctx -> {
-            // MC now handles this separately to the actual render, due to it occurring across threads.
-            // We need to store this for later use during actual render.
-            this.onEndExtraction(ctx);
-        });
-        LevelRenderEvents.END_MAIN.register(ctx -> {
-            try {
-                RenderSystem.getModelViewStack().pushMatrix();
-                RenderSystem.getModelViewStack().mul(ctx.poseStack().last().pose());
-                // RenderSystem.applyModelViewMatrix();
-                this.onPostRenderEntities(ctx);
-            } finally {
-                RenderSystem.getModelViewStack().popMatrix();
-                // RenderSystem.applyModelViewMatrix();
+    }
+
+    @SubscribeEvent
+    private void onEndExtraction(final ExtractLevelRenderStateEvent event) {
+        this.lastPartialTicks = event.getDeltaTracker().getRealtimeDeltaTicks();
+    }
+
+    @SubscribeEvent
+    public void onPostRenderEntities(final RenderLevelStageEvent.AfterLevel event) {
+        try {
+            RenderSystem.getModelViewStack().pushMatrix();
+            RenderSystem.getModelViewStack().mul(event.getPoseStack().last().pose());
+            if (this.visible) {
+                this.worldRenderListener.onRender(lastPartialTicks);
             }
-        });
+        } finally {
+            RenderSystem.getModelViewStack().popMatrix();
+        }
     }
 
     private void registerKeyMapping(final RegisterKeyMappingsEvent event) {
@@ -198,16 +196,6 @@ public final class NeoModWorldEditCUI {
         this.visible = true;
         this.controller.getDebugger().debug("Joined game, sending initial handshake");
         this.helo(event.getPlayer().connection);
-    }
-
-    private void onEndExtraction(final LevelExtractionContext ctx) {
-        this.lastPartialTicks = ctx.deltaTracker().getRealtimeDeltaTicks();
-    }
-
-    public void onPostRenderEntities(final LevelRenderContext ctx) {
-        if (this.visible) {
-            this.worldRenderListener.onRender(lastPartialTicks);
-        }
     }
 
     private void helo(final ClientPacketListener handler) {
