@@ -14,8 +14,6 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.renderer.LevelRenderer;
-import net.minecraft.client.renderer.state.level.LevelRenderState;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.Level;
 import net.neoforged.api.distmarker.Dist;
@@ -34,6 +32,7 @@ import org.enginehub.worldeditcui.protocol.CUIPacket;
 import org.enginehub.worldeditcui.protocol.CUIPacketHandler;
 import org.enginehub.worldeditcui.render.PipelineProvider;
 import org.enginehub.worldeditcui.render.VanillaPipelineProvider;
+import org.joml.Matrix4fStack;
 import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 
@@ -106,14 +105,15 @@ public final class NeoModWorldEditCUI {
 
     @SubscribeEvent
     public void onPostRenderEntities(final RenderLevelStageEvent.AfterLevel event) {
-        try {
-            RenderSystem.getModelViewStack().pushMatrix();
-            RenderSystem.getModelViewStack().mul(event.getPoseStack().last().pose());
-            if (this.visible) {
+        if (this.visible) {
+            Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
+            try {
+                modelViewStack.pushMatrix();
+                modelViewStack.mul(event.getModelViewMatrix());
                 this.worldRenderListener.onRender(lastPartialTicks);
+            } finally {
+                modelViewStack.popMatrix();
             }
-        } finally {
-            RenderSystem.getModelViewStack().popMatrix();
         }
     }
 
